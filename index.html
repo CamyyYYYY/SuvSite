@@ -26,7 +26,7 @@
       align-items: center;
       flex-direction: column;
       z-index: 10;
-      transition: opacity 1s;
+      transition: opacity 1s ease-in-out;
     }
 
     #startOverlay.hidden {
@@ -52,6 +52,48 @@
       background: rgba(0, 0, 0, 0.5);
       padding: 20px;
       border-radius: 10px;
+      opacity: 0;
+      animation: fadeIn 2s forwards;
+      animation-delay: 1.5s;
+    }
+
+    #carLabel {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      z-index: 5;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    .carousel-controls {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      z-index: 5;
+    }
+
+    .carousel-controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #0af;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
     }
 
     canvas {
@@ -69,6 +111,13 @@
   <div id="infoOverlay">
     <h1>🚙 Luxury SUV Showcase</h1>
     <p>Scroll or drag to explore beautiful 3D SUVs.</p>
+  </div>
+
+  <div id="carLabel">Audi SQ5</div>
+
+  <div class="carousel-controls">
+    <button id="prevBtn">◀ Prev</button>
+    <button id="nextBtn">Next ▶</button>
   </div>
 
   <script type="module">
@@ -102,24 +151,19 @@
     });
 
     const gltfLoader = new GLTFLoader();
-    gltfLoader.load('assets/suv_model.gltf', gltf => {
-      const model = gltf.scene;
-      model.scale.set(2, 2, 2);
-      model.position.set(0, -1, 0);
-      scene.add(model);
+    const carModels = ['assets/suv_model.gltf', 'assets/suv_model.gltf', 'assets/suv_model.gltf'];
+    const carNames = ['Audi SQ5', 'BMW X5', 'Mercedes GLE'];
+    const carObjects = [];
+    let activeIndex = 0;
 
-      const label = document.createElement('div');
-      label.textContent = "2025 X9 Elite Hybrid";
-      label.style.position = 'absolute';
-      label.style.top = '100px';
-      label.style.left = '50%';
-      label.style.transform = 'translateX(-50%)';
-      label.style.background = 'rgba(0,0,0,0.7)';
-      label.style.color = 'white';
-      label.style.padding = '10px 20px';
-      label.style.borderRadius = '8px';
-      label.style.zIndex = '2';
-      document.body.appendChild(label);
+    carModels.forEach((path, i) => {
+      gltfLoader.load(path, gltf => {
+        const model = gltf.scene;
+        model.scale.set(2, 2, 2);
+        model.position.set((i - 1) * 8, -1, 0);
+        scene.add(model);
+        carObjects.push(model);
+      });
     });
 
     const imagePaths = ['assets/suv1.jpg', 'assets/suv2.jpg', 'assets/suv3.jpg'];
@@ -149,19 +193,49 @@
     }
     animate();
 
+    function panToCar(index) {
+      const targetX = carObjects[index]?.position?.x || 0;
+      const label = document.getElementById('carLabel');
+      label.textContent = carNames[index];
+      label.style.opacity = 0;
+      setTimeout(() => {
+        label.style.opacity = 1;
+      }, 300);
+
+      function animateCamera() {
+        camera.position.x += (targetX - camera.position.x) * 0.05;
+        if (Math.abs(camera.position.x - targetX) > 0.01) {
+          requestAnimationFrame(animateCamera);
+        }
+      }
+      animateCamera();
+    }
+
+    function cycleCar(next = true) {
+      activeIndex = (activeIndex + (next ? 1 : -1) + carObjects.length) % carObjects.length;
+      panToCar(activeIndex);
+    }
+
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Entry interaction
-    const enterBtn = document.getElementById('enterBtn');
-    const overlay = document.getElementById('startOverlay');
+    window.addEventListener('DOMContentLoaded', () => {
+      const enterBtn = document.getElementById('enterBtn');
+      const overlay = document.getElementById('startOverlay');
+      const nextBtn = document.getElementById('nextBtn');
+      const prevBtn = document.getElementById('prevBtn');
 
-    enterBtn.addEventListener('click', () => {
-      overlay.classList.add('hidden');
-      sound.play();
+      enterBtn.addEventListener('click', () => {
+        overlay.classList.add('hidden');
+        sound.play();
+        panToCar(activeIndex);
+      });
+
+      nextBtn.addEventListener('click', () => cycleCar(true));
+      prevBtn.addEventListener('click', () => cycleCar(false));
     });
   </script>
 </body>
