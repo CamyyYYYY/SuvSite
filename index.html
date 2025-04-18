@@ -14,6 +14,36 @@
       color: white;
     }
 
+    #startOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 10;
+      transition: opacity 1s;
+    }
+
+    #startOverlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #startOverlay button {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background-color: #0af;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+    }
+
     #infoOverlay {
       position: absolute;
       top: 20px;
@@ -30,16 +60,22 @@
   </style>
 </head>
 <body>
+  <div id="startOverlay">
+    <h1>Welcome to the Luxury SUV Showcase</h1>
+    <p>Click below to enter the experience</p>
+    <button id="enterBtn">Enter</button>
+  </div>
+
   <div id="infoOverlay">
     <h1>🚙 Luxury SUV Showcase</h1>
     <p>Scroll or drag to explore beautiful 3D SUVs.</p>
   </div>
-  <script type="module">
-    import * as THREE from 'https://cdn.skypack.dev/three';
-    import { OrbitControls } from 'https://cdn.skypack.dev/three/examples/jsm/controls/OrbitControls';
-    import { GLTFLoader } from 'https://cdn.skypack.dev/three/examples/jsm/loaders/GLTFLoader';
 
-    // Scene setup
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x000000, 10, 50);
 
@@ -58,25 +94,34 @@
     dirLight.position.set(5, 10, 7.5);
     scene.add(dirLight);
 
-    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
 
-    // Background
     const loader = new THREE.TextureLoader();
     loader.load('assets/luxury_env.jpg', texture => {
       scene.background = texture;
     });
 
-    // Load 3D SUV model
     const gltfLoader = new GLTFLoader();
     gltfLoader.load('assets/suv_model.gltf', gltf => {
       const model = gltf.scene;
       model.scale.set(2, 2, 2);
       model.position.set(0, -1, 0);
       scene.add(model);
+
+      const label = document.createElement('div');
+      label.textContent = "2025 X9 Elite Hybrid";
+      label.style.position = 'absolute';
+      label.style.top = '100px';
+      label.style.left = '50%';
+      label.style.transform = 'translateX(-50%)';
+      label.style.background = 'rgba(0,0,0,0.7)';
+      label.style.color = 'white';
+      label.style.padding = '10px 20px';
+      label.style.borderRadius = '8px';
+      label.style.zIndex = '2';
+      document.body.appendChild(label);
     });
 
-    // Image planes (thumbnails)
     const imagePaths = ['assets/suv1.jpg', 'assets/suv2.jpg', 'assets/suv3.jpg'];
     imagePaths.forEach((path, i) => {
       const imgTex = loader.load(path);
@@ -87,7 +132,6 @@
       scene.add(mesh);
     });
 
-    // Background audio
     const listener = new THREE.AudioListener();
     camera.add(listener);
 
@@ -97,10 +141,8 @@
       sound.setBuffer(buffer);
       sound.setLoop(true);
       sound.setVolume(0.4);
-      sound.play();
     });
 
-    // Animate
     function animate() {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
@@ -111,6 +153,15 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Entry interaction
+    const enterBtn = document.getElementById('enterBtn');
+    const overlay = document.getElementById('startOverlay');
+
+    enterBtn.addEventListener('click', () => {
+      overlay.classList.add('hidden');
+      sound.play();
     });
   </script>
 </body>
